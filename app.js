@@ -20,3 +20,12 @@ async function refreshExports(){try{const r=await fetch("/api/exports");const d=
 $("refreshExports").onclick=refreshExports;
 fetch("/api/capabilities").then(r=>r.json()).then(d=>{$("capabilities").textContent=`FFmpeg: ${d.ffmpeg?"available":"not installed"} · Local speech engine: ${d.espeak?"available":"not installed"}`}).catch(()=>{$("capabilities").textContent="Could not detect local tools."});
 countWords();refreshExports();
+// Browser-only additions: voice preview and gentle talking animation.
+(function classroomEnhancements(){
+ const gender=document.getElementById('voiceGender'), test=document.getElementById('testVoice'), stop=document.getElementById('stopVoice'), avatar=document.getElementById('avatar');
+ function chooseVoice(g){if(!('speechSynthesis' in window))return null;const list=speechSynthesis.getVoices();const matches=list.filter(v=>new RegExp(g==='female'?'female|woman|zira|samantha|victoria|karen|tessa|susan':'male|man|david|mark|daniel|alex|george|james','i').test(v.name+' '+v.voiceURI));return matches[0]||list.find(v=>(v.lang||'').toLowerCase().startsWith('en'))||list[0]||null;}
+ if(test)test.onclick=()=>{if(!('speechSynthesis' in window)){alert('Speech preview is not supported by this browser.');return;}speechSynthesis.cancel();const text=(document.getElementById('notes')?.value||'Welcome to our classroom. Let us begin today’s lesson.').slice(0,900);const utter=new SpeechSynthesisUtterance(text);utter.lang='en-US';const v=chooseVoice(gender?.value||'female');if(v)utter.voice=v;utter.rate=0.95;utter.onstart=()=>avatar?.classList.add('talking');utter.onend=utter.onerror=()=>avatar?.classList.remove('talking');speechSynthesis.speak(utter);};
+ if(stop)stop.onclick=()=>{if('speechSynthesis'in window)speechSynthesis.cancel();avatar?.classList.remove('talking');};
+ if(gender)gender.addEventListener('change',()=>{const btn=document.querySelector('[data-voice]');if(btn){document.querySelectorAll('[data-voice]').forEach(x=>x.classList.remove('selected'));const target=[...document.querySelectorAll('[data-voice]')].find(x=>/female|male/i.test(x.textContent)&&x.textContent.toLowerCase().includes(gender.value));if(target)target.classList.add('selected');}});
+ const cutout=document.getElementById('classroomCutout');if(cutout)cutout.addEventListener('change',()=>{if(avatar)avatar.style.background=cutout.checked?'radial-gradient(ellipse at 50% 25%,#fff9 0 35%,#ffffff08 70%)':'transparent';if(avatar)avatar.style.filter=cutout.checked?'drop-shadow(0 6px 5px #0004)':'none';});
+})();
